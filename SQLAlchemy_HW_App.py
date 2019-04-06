@@ -1,7 +1,6 @@
-# 1. Import Flask
+# Import Dependencies
 from flask import Flask, jsonify
 
-import numpy as np
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
@@ -22,11 +21,11 @@ Station = Base.classes.station
 # Create our session (link) from Python to the DB
 session = Session(engine)
 
-# 2. Create an app
+# Create an app
 app = Flask(__name__)
 
 
-# 3. Define static routes
+# Define static routes
 @app.route("/")
 def Home_page():
     #List all available api routes."""
@@ -35,49 +34,85 @@ def Home_page():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end>"
+        f"/api/v1.0/start_date<br/>"
+        f"/api/v1.0/start_date/end_date"
     )
 
-
+# Define the precipitation route
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     # Return a list of all dates and precipitation results
-    # Query all precipitation results
-    prcp_results = session.query(Measurement.date, Measurement.prcp).all()
 
-    # Convert list of tuples into normal list
+    # Query all precipitation results
+    prcp_results = session.query(Measurement.date, Measurement.prcp).\
+        all()
+
+    # Convert to a dict
     all_prcp = dict(prcp_results)
 
+    # Return jsonified results
     return jsonify(all_prcp)
 
-
+# Define the stations route
 @app.route("/api/v1.0/stations")
 def stations():
     # Return a list of all stations
-    # Query all stations
-    station_results = session.query(Station.id, Station.station).all()
 
-    # Convert list of tuples into normal list
+    # Query all stations
+    station_results = session.query(Station.id, Station.station).\
+        all()
+
+    # Convert to a dict
     all_stations = dict(station_results)
 
+    # Return jsonified results
     return jsonify(all_stations)
 
+# Define the tobs route
 @app.route("/api/v1.0/tobs")
 def tobs():
     # Return a list of all temperature observations (tobs) in last 12 months
     
     # Calculate the date 1 year ago from the last data point in the database
     year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
-    # Query all tobs for the last year
-    tobs_results = session.query(Measurement.id, Measurement.tobs).filter(Measurement.date >= year_ago).order_by((Measurement.date).desc()).all()
 
-    # Convert list of tuples into normal list
+    # Query all tobs for the last year
+    tobs_results = session.query(Measurement.id, Measurement.tobs).\
+        filter(Measurement.date >= year_ago).order_by((Measurement.date).\
+        desc()).\
+        all()
+
+    # Convert to a dict
     year_tobs = dict(tobs_results)
 
+    # Return jsonified results
     return jsonify(year_tobs)
 
+# Define the start-date-only route
+@app.route("/api/v1.0/start_date/<start_date>")
+def start_date(start_date):
+    
+    # Query for the min, max and average temperature for the date input
+    start_date_results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).\
+        all()
 
-# 4. Define main behavior
+    # Return jsonified results
+    return jsonify(start_date_results)
+
+# Define the start/end -date route
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def calc_temps(start_date, end_date):
+    
+    # Query for the min, max, and average temperature in the date range
+    date_range_results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).\
+        filter(Measurement.date <= end_date).\
+        all()
+
+    # Return jsonified results
+    return jsonify(date_range_results)
+
+# Define main behavior
 if __name__ == "__main__":
     app.run(debug=True)
