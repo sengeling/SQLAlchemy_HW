@@ -28,6 +28,9 @@ app = Flask(__name__)
 # Define static routes
 @app.route("/")
 def Home_page():
+    
+    session = Session(engine)
+    
     #List all available api routes."""
     return (
         f"Available Routes:<br/>"
@@ -42,6 +45,8 @@ def Home_page():
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     # Return a list of all dates and precipitation results
+
+    session = Session(engine)
 
     # Query all precipitation results
     prcp_results = session.query(Measurement.date, Measurement.prcp).\
@@ -58,6 +63,8 @@ def precipitation():
 def stations():
     # Return a list of all stations
 
+    session = Session(engine)
+
     # Query all stations
     station_results = session.query(Station.id, Station.station).\
         all()
@@ -73,6 +80,8 @@ def stations():
 def tobs():
     # Return a list of all temperature observations (tobs) in last 12 months
     
+    session = Session(engine)
+
     # Calculate the date 1 year ago from the last data point in the database
     year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
 
@@ -92,6 +101,8 @@ def tobs():
 @app.route("/api/v1.0/start_date/<start_date>")
 def start_date(start_date):
     
+    session = Session(engine)
+
     # Query for the min, max and average temperature for the date input
     start_date_results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
         filter(Measurement.date >= start_date).\
@@ -104,6 +115,8 @@ def start_date(start_date):
 @app.route("/api/v1.0/<start_date>/<end_date>")
 def calc_temps(start_date, end_date):
     
+    session = Session(engine)
+
     # Query for the min, max, and average temperature in the date range
     date_range_results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
         filter(Measurement.date >= start_date).\
